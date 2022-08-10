@@ -167,7 +167,7 @@ func tokenSource(isCmd bool, gcpConfig map[string]string) (oauth2.TokenSource, e
 	if impersonateServiceAccount, exists := gcpConfig["impersonate-service-account"]; exists {
 		ts, err = impersonate.CredentialsTokenSource(context.Background(), impersonate.CredentialsConfig{
 			TargetPrincipal: impersonateServiceAccount,
-			Scopes:          gcpConfig["scopes"],
+			Scopes:          scopes,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("cannot construct google impersonate token source: %v", err)

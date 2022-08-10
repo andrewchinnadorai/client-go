@@ -34,6 +34,7 @@ import (
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/util/jsonpath"
 	"k8s.io/klog/v2"
+	"google.golang.org/api/impersonate"
 )
 
 func init() {
@@ -160,10 +161,24 @@ func tokenSource(isCmd bool, gcpConfig map[string]string) (oauth2.TokenSource, e
 
 	// Google Application Credentials-based token source
 	scopes := parseScopes(gcpConfig)
-	ts, err := google.DefaultTokenSource(context.Background(), scopes...)
-	if err != nil {
-		return nil, fmt.Errorf("cannot construct google default token source: %v", err)
+	var ts oauth2.TokenSource 
+	var err error
+
+	if impersonateServiceAccount, exists := gcpConfig["impersonate-service-account"]; exists {
+		ts, err = impersonate.CredentialsTokenSource(context.Background(), impersonate.CredentialsConfig{
+			TargetPrincipal: impersonateServiceAccount,
+			Scopes:          gcpConfig["scopes"],
+		})
+		if err != nil {
+			return nil, fmt.Errorf("cannot construct google impersonate token source: %v", err)
+		}
+	} else {
+		ts, err = google.DefaultTokenSource(context.Background(), scopes...)
+		if err != nil {
+			return nil, fmt.Errorf("cannot construct google default token source: %v", err)
+		}
 	}
+
 	return ts, nil
 }
 
